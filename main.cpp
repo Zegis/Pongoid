@@ -4,12 +4,12 @@ using namespace std;
 
 int main()
 {
-	Game gra;
+	Game App;
 
-	if(gra.Initialize())
+	if(App.Initialize())
 	{
-		gra.GameLoop();
-		gra.Deinitialize();
+		App.GameLoop();
+		App.Deinitialize();
 		return 0;
 	}
 	else

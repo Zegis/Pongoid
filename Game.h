@@ -36,7 +36,7 @@ class Game
 		int score;
 		int hp;
 
-		std::list<Brick> kafelki;
+		std::list<Brick> bricks;
 
 		bool InitializeAllegro();
 		bool PrepareSpritesAndFonts();

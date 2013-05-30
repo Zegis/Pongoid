@@ -220,7 +220,7 @@ void Game::GameLoop()
 					tmp.setItemSprite(brick[1]);
 				else
 					tmp.setItemSprite(brick[0]);
-				kafelki.push_back(tmp);
+				bricks.push_back(tmp);
 			}
 
 		al_set_target_bitmap(al_get_backbuffer(display));
@@ -259,19 +259,19 @@ void Game::GameLoop()
 						ball.VerticalBounce();
 				}
 
-				for(list<Brick>::iterator it = kafelki.begin(); it != kafelki.end(); ++it)
+				for(list<Brick>::iterator it = bricks.begin(); it != bricks.end(); ++it)
 				{
 					if(ball.Collision(*it))
 					{
 						ball.VerticalBounce();
 					
 						score+=it->getScore();
-						kafelki.erase(it);
+						bricks.erase(it);
 						break;
 					}
 				}
 
-				if(kafelki.size() == 0)
+				if(bricks.size() == 0)
 				{
 					running = false;
 					victory = true;
@@ -333,7 +333,7 @@ void Game::DrawScene()
 
 	list<Brick>::iterator it;
 
-	for(it = kafelki.begin(); it!=kafelki.end(); ++it)
+	for(it = bricks.begin(); it!=bricks.end(); ++it)
 		al_draw_bitmap(it->getItemSprite(),it->x,it->y,0);
 
 	if(pause)

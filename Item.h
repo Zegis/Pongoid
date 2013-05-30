@@ -24,7 +24,7 @@ public:
 	ALLEGRO_BITMAP *sprite;
 
 	Item(void);
-	Item(int, int, int, int);
+	Item(int x, int y, int width, int height);
 
 	void setItemSprite(ALLEGRO_BITMAP *);
 	ALLEGRO_BITMAP* getItemSprite();
