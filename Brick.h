@@ -10,10 +10,10 @@ private:
 	int PointValue;
 
 public:
-	Brick(int, int, int, int);
-	Brick(int, int, int);
+	Brick(int x, int y, int width, int height);
+	Brick(int x, int y, int score);
 
-	Brick(int, int, BrickColor);
+	Brick(int x, int y, BrickColor);
 
 	int getScore();
 

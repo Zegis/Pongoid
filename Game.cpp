@@ -19,9 +19,9 @@ bool Game::Initialize()
 	if(InitializeAllegro())
 		if(PrepareSpritesAndFonts())
 		{
-			running = true;
-			hp = 3;
-			pause = false;
+			gameState = GameState::Running;
+			lives = 3;
+			score = 0;
 			return true;
 		}
 		else
@@ -92,6 +92,18 @@ bool Game::InitializeAllegro()
 
 bool Game::PrepareSpritesAndFonts()
 {
+
+	if( PrepareSprites())
+	{
+		bool ret = PrepareFonts();
+		return ret;
+	}
+	else
+		return false;
+}
+
+bool Game::PrepareSprites()
+{
 	ballSprite = al_create_bitmap(20,20);
 
 	if(!ballSprite)
@@ -104,9 +116,9 @@ bool Game::PrepareSpritesAndFonts()
 	al_set_target_bitmap(ballSprite);
 	al_draw_filled_circle(10,10,9,al_map_rgb(255,255,255));
 
-	pong = al_create_bitmap(100,32);
+	pongSprite = al_create_bitmap(100,32);
 
-	if(!pong)
+	if(!pongSprite)
 	{
 		cout << "Failed to create sprite for paddle!";
 		cin.get();
@@ -115,7 +127,7 @@ bool Game::PrepareSpritesAndFonts()
 		return false;
 	}
 
-	al_set_target_bitmap(pong);
+	al_set_target_bitmap(pongSprite);
 	al_clear_to_color(al_map_rgb(0,255,0));
 
 	for(int i=0; i<3; ++i)
@@ -126,45 +138,34 @@ bool Game::PrepareSpritesAndFonts()
 			cout << "Failed to create sprite for brick!";
 			cin.get();
 			al_destroy_bitmap(ballSprite);
-			al_destroy_bitmap(pong);
+			al_destroy_bitmap(pongSprite);
 			return false;
 		}
-
 		al_set_target_bitmap(brick[i]);
 		al_clear_to_color(al_map_rgb(0,0,255));
 	}
 
 	al_set_target_bitmap(brick[0]);
-		al_clear_to_color(al_map_rgb(255,0,255));
+	al_clear_to_color(al_map_rgb(255,0,255));
 
 	al_set_target_bitmap(al_get_backbuffer(display));
 
+	paddle.setItemSprite(pongSprite);
+	ball.setItemSprite(ballSprite);
+
+	return true;
+}
+
+bool Game::PrepareFonts()
+{
 	font = al_load_ttf_font("pirulen.ttf",52,0);
-
-	if(!font)
-	{
-		cout << "Failed to create sprite for brick!";
-		cin.get();
-		al_destroy_bitmap(ballSprite);
-		al_destroy_bitmap(pong);
-		al_destroy_bitmap(brick[0]);
-		al_destroy_bitmap(brick[1]);
-		al_destroy_bitmap(brick[2]);
-		return false;
-	}
-
 	scoreFont = al_load_ttf_font("pirulen.ttf",22,0);
 
-	if(!scoreFont)
+	if(!scoreFont || !font)
 	{
-		cout << "Failed to create sprite for brick!";
+		cout << "Failed to create fonts!";
 		cin.get();
-		al_destroy_bitmap(ballSprite);
-		al_destroy_bitmap(pong);
-		al_destroy_bitmap(brick[0]);
-		al_destroy_bitmap(brick[1]);
-		al_destroy_bitmap(brick[2]);
-		al_destroy_font(font);
+		DestroySprites();
 		return false;
 	}
 
@@ -188,28 +189,30 @@ void Game::DeinitializeAllegro()
 
 void Game::DestroySpritesAndFonts()
 {
-	al_destroy_bitmap(pong);
-	al_destroy_bitmap(ballSprite);
-		al_destroy_bitmap(brick[0]);
-		al_destroy_bitmap(brick[1]);
-		al_destroy_bitmap(brick[2]);
+	DestroySprites();
+	DestroyFonts();
+}
 
+void Game::DestroySprites()
+{
+	al_destroy_bitmap(pongSprite);
+	al_destroy_bitmap(ballSprite);
+	al_destroy_bitmap(brick[0]);
+	al_destroy_bitmap(brick[1]);
+	al_destroy_bitmap(brick[2]);
+}
+
+void Game::DestroyFonts()
+{
 	al_destroy_font(font);
 	al_destroy_font(scoreFont);
 }
 
 void Game::GameLoop()
 {
-		bool redraw = false;
-		
 		ALLEGRO_EVENT ev;
 
-		victory = false;
-		score = 0;
-
-		paddle.setItemSprite(pong);
-		ball.setItemSprite(ballSprite);
-
+		bool redraw = false;
 		bool left = false, right = false;
 
 		for(int i=0; i<12; ++i)
@@ -224,25 +227,25 @@ void Game::GameLoop()
 			}
 
 		al_set_target_bitmap(al_get_backbuffer(display));
-		DrawScene();
 
 		al_start_timer(timer);
 
+ 		Draw();
 
-		while(running)
+		while(true)
 		{
 			al_wait_for_event(queue,&ev);
 
 			if(ev.type == ALLEGRO_EVENT_KEY_DOWN && ev.keyboard.keycode == ALLEGRO_KEY_P)
 			{
-				pause = !pause;
+				gameState = (gameState == GameState::Pause) ? GameState::Running : GameState::Pause;
 				redraw = true;
 			}
 
 			if(ev.type == ALLEGRO_EVENT_KEY_CHAR && ev.keyboard.keycode == ALLEGRO_KEY_ESCAPE)
-				running = false;
+				break;
 
-			if(pause && redraw == false)
+			if(gameState == GameState::Pause && redraw == false)
 				continue;
 
 			if(ev.type == ALLEGRO_EVENT_TIMER)
@@ -273,16 +276,19 @@ void Game::GameLoop()
 
 				if(bricks.size() == 0)
 				{
-					running = false;
-					victory = true;
+					gameState = GameState::Victory;
+					break;
 				}
 
 				if(ball.y > 600)
 				{
 					ball.Rethrow(400,300);
 					paddle.x = 400;
-					if(--hp <= 0)
-						running = false;
+					if(--lives <= 0)
+					{
+						gameState = GameState::Defeat;
+						break;
+					}
 				}
 
 				redraw = true;
@@ -311,8 +317,14 @@ void Game::GameLoop()
 
 void Game::Draw()
 {
-	if (running == true) DrawScene();
-	if (running == false) DrawEnd();
+	if (gameState == GameState::Running)
+		DrawScene();
+	else if (gameState == GameState::Pause) 
+		DrawPause();
+	else 
+		DrawEnd();
+
+	al_flip_display();
 }
 
 void Game::DrawScene()
@@ -322,34 +334,37 @@ void Game::DrawScene()
 	al_draw_bitmap(ball.getItemSprite(),ball.x,ball.y,0);
 	al_draw_bitmap(paddle.getItemSprite(),paddle.x,paddle.y,0);
 
+	list<Brick>::iterator it;
+
+	for(it = bricks.begin(); it!=bricks.end(); ++it)
+		al_draw_bitmap(it->getItemSprite(),it->x,it->y,0);
+
+	DrawGui();
+}
+
+void Game::DrawGui()
+{
 	stringstream str;
 	str << score;
 	
 	string scoreText = str.str();
 
 	al_draw_text(scoreFont,al_map_rgb(255,255,255),750, 0, ALLEGRO_ALIGN_RIGHT, str.str().c_str());
-	for(int i=hp; i > 1; --i)
+	for(int i=lives; i > 1; --i)
 		al_draw_scaled_bitmap(paddle.getItemSprite(),0,0,al_get_bitmap_width(paddle.getItemSprite()),al_get_bitmap_height(paddle.getItemSprite()),750,20+i*10,al_get_bitmap_width(paddle.getItemSprite()) * 0.25, al_get_bitmap_height(paddle.getItemSprite()) * 0.25 ,0);
 
-	list<Brick>::iterator it;
+}
 
-	for(it = bricks.begin(); it!=bricks.end(); ++it)
-		al_draw_bitmap(it->getItemSprite(),it->x,it->y,0);
-
-	if(pause)
-		al_draw_text(font,al_map_rgb(255,255,255),540, 250, ALLEGRO_ALIGN_RIGHT, "PAUSED!");
-
-	al_flip_display();
-
+void Game::DrawPause()
+{
+	al_draw_text(font,al_map_rgb(255,255,255),540, 250, ALLEGRO_ALIGN_RIGHT, "PAUSED!");
 }
 
 void Game::DrawEnd()
 {
-	if(victory)
+	if(gameState == GameState::Victory)
 		al_draw_text(font,al_map_rgb(255,255,255),500, 250, ALLEGRO_ALIGN_RIGHT, "Victory!");
-	else if(hp == 0)
+	else if(gameState == GameState::Defeat)
 		al_draw_text(font,al_map_rgb(255,255,255),525, 250, ALLEGRO_ALIGN_RIGHT, "Defeat!");
-
-	al_flip_display();
 }
 

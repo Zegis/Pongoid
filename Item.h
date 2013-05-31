@@ -33,15 +33,15 @@ public:
 
 	void Move();
 
-	void Rethrow(int, int);
+	void Rethrow(int newX, int newY);
 
 	void Boundaries();
 
 	void HorizontalBounce();
 	void VerticalBounce();
 
-	bool Collision(Item);
+	bool Collision(Item itemToCheck);
 
-	void RecoloreSprite(BrickColor);
+	void RecoloreSprite(BrickColor newColor);
 
 };

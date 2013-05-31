@@ -72,15 +72,15 @@ void Item::Rethrow(int newX, int newY)
 	y = newY;
 }
 
-void Item::RecoloreSprite(BrickColor color)
+void Item::RecoloreSprite(BrickColor newColor)
 {
 	al_set_target_bitmap(sprite);
 
-	if(color == BrickColor::Blue)
+	if(newColor == BrickColor::Blue)
 		al_clear_to_color(al_map_rgb(0,0,255));
-	else if(color == BrickColor::Red)
+	else if(newColor == BrickColor::Red)
 		al_clear_to_color(al_map_rgb(255,0,0));
-	else if(color == BrickColor::Green)
+	else if(newColor == BrickColor::Green)
 		al_clear_to_color(al_map_rgb(0,255,0));
 	else
 		al_clear_to_color(al_map_rgb(255,250,100));
